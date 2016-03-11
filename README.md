@@ -13,6 +13,15 @@ The scrypt algorithm is, by design, expensive to execute, which increases the am
 - **Cancellable** - If the key is not longer required, the computation can be cancelled
 - **Progress Callback** - Provides the current progress of key derivation as a percentage complete
 
+Todo
+----
+
+These are all coming soon (as of 2016-03-11):
+- Remove browser dependency on slow buffer
+- Add test cases (from scrypt-async)
+- Improve the demo page
+
+
 Installing
 ----------
 
@@ -21,13 +30,14 @@ Installing
 You should likely not use this module for *node.js* as there are many faster [alternatives](https://www.npmjs.com/package/scrypt), but if you so wish to:
 
 ```
-npm install blah
+npm install scrypt-js
 ```
 
 
 **browser**
 
 ```html
+// coming soon
 <script src="" type="text/javascript"></script>
 ```
 
