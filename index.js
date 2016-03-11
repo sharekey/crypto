@@ -92,7 +92,7 @@
         p = m.slice(m.length - bytesLeft, m.length);
 
         p.push(0x80);
-        for (i = bytesLeft + 1; i < numZeros; i++) p.push(0);
+        for (i = bytesLeft + 1; i < numZeros; i++) { p.push(0); }
         p.push((bitLenHi>>>24) & 0xff);
         p.push((bitLenHi>>>16) & 0xff);
         p.push((bitLenHi>>>8)  & 0xff);
@@ -254,14 +254,15 @@
     }
 
     function arraycopy(src, srcPos, dest, destPos, length) {
+    /*
         if (Buffer.isBuffer(src) && Buffer.isBuffer(dest)) {
             src.copy(dest, destPos, srcPos, srcPos + length);
 
-        } else {
+        } else {*/
             while (length--) {
                 dest[destPos++] = src[srcPos++];
             }
-        }
+//        }
     }
 
     function makeBuffer(value) {
@@ -327,6 +328,9 @@
         var i0 = 0, i1;
         var Bi, Xi;
 
+        // How many blockmix_salsa8 can we do per step?
+        var limit = parseInt(1000 / r);
+
         // Trick from scrypt-async; if there is a setImmediate shim in place, use it
         var nextTick = (typeof setImmediate !== 'undefined') ? setImmediate : setTimeout;
 
@@ -334,7 +338,7 @@
         // stop and give other evnts on the evnt loop a chance to run. ~RicMoo
         var incrementalSMix = function() {
             if (stop) {
-                return callback(new Error('cancelled'));
+                return callback(new Error('cancelled'), currentOp / totalOps);
             }
 
             switch (state) {
@@ -353,7 +357,7 @@
                 case 1:
                     // Run up to 1000 steps of the first inner smix loop
                     var steps = N - i1;
-                    if (steps > 1000) { steps = 1000; }
+                    if (steps > limit) { steps = limit; }
                     for (var i = 0; i < steps; i++) {                // ROMix - 2
                         XY.copy(V, (i1 + i) * Yi, Xi, Xi + Yi);      // ROMix - 3
                         blockmix_salsa8(XY, Xi, Yi, r, B32, x, _X);  // ROMix - 4
@@ -362,6 +366,11 @@
                     // for (var i = 0; i < N; i++)
                     i1 += steps;
                     currentOp += steps;
+
+                    // Call the callback with the progress (optionally stopping us)
+                    stop = callback(null, currentOp / totalOps);
+                    if (stop) { break; }
+
                     if (i1 < N) {
                         break;
                     }
@@ -369,14 +378,12 @@
                     i1 = 0;                                          // Move to ROMix 6
                     state = 2;
 
-                    // Call the callback with the progress (optionally stopping us)
-                    stop = callback(null, currentOp / totalOps);
-                    if (stop) { break; }
+                    // Fall through
 
                 case 2:
                     // Run up to 1000 steps of the second inner smix loop
                     var steps = N - i1;
-                    if (steps > 1000) { steps = 1000; }
+                    if (steps > limit) { steps = limit; }
                     for (var i = 0; i < steps; i++) {                // ROMix - 6
                         var offset = Xi + (2 * r - 1) * 64;          // ROMix - 7
                         var j = XY.readUInt32LE(offset) & (N - 1);
@@ -387,13 +394,14 @@
                     // for (var i = 0; i < N; i++)...
                     i1 += steps;
                     currentOp += steps;
-                    if (i1 < N) {
-                        break;
-                    }
 
                     // Call the callback with the progress (optionally stopping us)
                     stop = callback(null, currentOp / totalOps);
                     if (stop) { break; }
+
+                    if (i1 < N) {
+                        break;
+                    }
 
                     XY.copy(B, Bi, Xi, Xi + Yi);                   // ROMix - 10
 
@@ -425,8 +433,8 @@
         root.scrypt = scrypt;
 
         // If there was something else named scrypt, make sure it is still reachable
-        if (previousModule) {
-            root.scrypt._previousModule = previousModule;
+        if (previousScrypt) {
+            root.scrypt._previousScrypt = previousScrypt;
         }
     }
 
