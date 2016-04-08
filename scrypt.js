@@ -2,9 +2,6 @@
 
 (function(root) {
 
-    // If there was a previous object named scrypt, remember it
-    var previousScrypt = root.scrypt;
-
     var MAX_VALUE = 0x7fffffff;
 
     // The SHA256 and PBKDF2 implementation are from scrypt-async-js:
@@ -433,17 +430,23 @@
             incrementalSMix();
     }
 
+    // node.js
     if (typeof(exports) !== 'undefined') {
-       // node.js
        module.exports = scrypt;
 
+    // RequireJS/AMD
+    // http://www.requirejs.org/docs/api.html
+    // https://github.com/amdjs/amdjs-api/wiki/AMD
+    } else if (typeof(define) === 'function' && define.amd) {
+        define(scrypt);
+
+    // Web Browsers
     } else {
-        // Browser
         root.scrypt = scrypt;
 
-        // If there was something else named scrypt, make sure it is still reachable
-        if (previousScrypt) {
-            root.scrypt._previousScrypt = previousScrypt;
+        // If there was an existing library "scrypt", make sure it is still available
+        if (root && root.scrypt) {
+            root._scrypt = root.scrypt;
         }
     }
 
