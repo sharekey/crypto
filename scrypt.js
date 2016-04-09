@@ -1,18 +1,6 @@
 "use strict";
 
 (function(root) {
-    function dump(a) {
-        var result = '';
-        for (var i = 0; i < a.length; i++) {
-            result += ((a[i] >> 0) & 0xff) + ' ';
-            result += ((a[i] >> 8) & 0xff) + ' ';
-            result += ((a[i] >> 16) & 0xff) + ' ';
-            result += ((a[i] >> 24) & 0xff) + ' ';
-        }
-        console.log('')
-        console.log(result);
-    }
-
     var MAX_VALUE = 0x7fffffff;
 
     // The SHA256 and PBKDF2 implementation are from scrypt-async-js:
@@ -169,22 +157,22 @@
 
     // The following is an adaptation of scryptsy
     // See: https://www.npmjs.com/package/scryptsy
-    function blockmix_salsa8(BY, Bi, Yi, r, B32, x, _X) {
+    function blockmix_salsa8(BY, Yi, r, x, _X) {
         var i;
 
-        arraycopy(BY, Bi + (2 * r - 1) * 16, _X, 0, 16);
+        arraycopy(BY, (2 * r - 1) * 16, _X, 0, 16);
         for (i = 0; i < 2 * r; i++) {
-            blockxor(BY, i * 16, _X, 0, 16);
-            salsa20_8(_X, B32, x);
+            blockxor(BY, i * 16, _X, 16);
+            salsa20_8(_X, x);
             arraycopy(_X, 0, BY, Yi + (i * 16), 16);
         }
 
         for (i = 0; i < r; i++) {
-            arraycopy(BY, Yi + (i * 2) * 16, BY, Bi + (i * 16), 16);
+            arraycopy(BY, Yi + (i * 2) * 16, BY, (i * 16), 16);
         }
 
         for (i = 0; i < r; i++) {
-            arraycopy(BY, Yi + (i * 2 + 1) * 16, BY, Bi + (i + r) * 16, 16);
+            arraycopy(BY, Yi + (i * 2 + 1) * 16, BY, (i + r) * 16, 16);
         }
     }
 
@@ -192,20 +180,8 @@
         return (a << b) | (a >>> (32 - b));
     }
 
-    function salsa20_8(B, B32, x) {
-/*
-        for (var i = 0; i < 16; i++) {
-            B32[i] = (B[i * 4 + 0] & 0xff) << 0;
-            B32[i] |= (B[i * 4 + 1] & 0xff) << 8;
-            B32[i] |= (B[i * 4 + 2] & 0xff) << 16;
-            B32[i] |= (B[i * 4 + 3] & 0xff) << 24;
-            // B32[i] = B.readUInt32LE(i*4)   <--- this is signficantly slower even in Node.js
-        }
-*/
-        //arraycopy(B, 0, B32, 0, 16);
-        B32 = B;
-
-        arraycopy(B32, 0, x, 0, 16);
+    function salsa20_8(B, x) {
+        arraycopy(B, 0, x, 0, 16);
 
         for (var i = 8; i > 0; i -= 2) {
             x[ 4] ^= R(x[ 0] + x[12], 7);
@@ -243,40 +219,21 @@
         }
 
         for (i = 0; i < 16; ++i) {
-            B32[i] = x[i] + B32[i];
+            B[i] += x[i];
         }
-
-        //arraycopy(B32, 0, B, 0, 16);
-//        B32 = B
-/*
-        for (i = 0; i < 16; i++) {
-            var bi = i * 4
-            B[bi + 0] = (B32[i] >> 0 & 0xff)
-            B[bi + 1] = (B32[i] >> 8 & 0xff)
-            B[bi + 2] = (B32[i] >> 16 & 0xff)
-            B[bi + 3] = (B32[i] >> 24 & 0xff)
-            // B.writeInt32LE(B32[i], i*4)  //<--- this is signficantly slower even in Node.js
-        }
-        */
     }
 
     // naive approach... going back to loop unrolling may yield additional performance
-    function blockxor(S, Si, D, Di, len) {
+    function blockxor(S, Si, D, len) {
         for (var i = 0; i < len; i++) {
-            D[Di + i] ^= S[Si + i]
+            D[i] ^= S[Si + i]
         }
     }
 
     function arraycopy(src, srcPos, dest, destPos, length) {
-    /*
-        if (Buffer.isBuffer(src) && Buffer.isBuffer(dest)) {
-            src.copy(dest, destPos, srcPos, srcPos + length);
-
-        } else {*/
-            while (length--) {
-                dest[destPos++] = src[srcPos++];
-            }
-//        }
+        while (length--) {
+            dest[destPos++] = src[srcPos++];
+        }
     }
 
     function makeBuffer(value) {
@@ -335,10 +292,8 @@
         var Yi = 32 * r;
 
         // scratch space
-        var B32 = new Int32Array(16); // salsa20_8
-        var x = new Int32Array(16);   // salsa20_8
+        var x = new Int32Array(16);       // salsa20_8
         var _X = new Int32Array(16);      // blockmix_salsa8
-
 
         var totalOps = p * N * 2;
         var currentOp = 0;
@@ -370,11 +325,9 @@
                     // for (var i = 0; i < p; i++)...
                     Bi = i0 * 32 * r;
 
-                    //B.copy(XY, Xi, Bi, Bi + Yi);                     // ROMix - 1
-                    arraycopy(B, Bi, XY, 0, Yi);
+                    arraycopy(B, Bi, XY, 0, Yi);                       // ROMix - 1
 
-
-                    state = 1;                                       // Move to ROMix 2
+                    state = 1;                                         // Move to ROMix 2
                     i1 = 0;
 
                     // Fall through
@@ -384,10 +337,9 @@
                     // Run up to 1000 steps of the first inner smix loop
                     var steps = N - i1;
                     if (steps > limit) { steps = limit; }
-                    for (var i = 0; i < steps; i++) {                // ROMix - 2
-                        //XY.copy(V, (i1 + i) * Yi, Xi, Xi + Yi);      // ROMix - 3
-                        arraycopy(XY, 0, V, (i1 + i) * Yi, Yi)
-                        blockmix_salsa8(XY, 0, Yi, r, B32, x, _X);  // ROMix - 4
+                    for (var i = 0; i < steps; i++) {                  // ROMix - 2
+                        arraycopy(XY, 0, V, (i1 + i) * Yi, Yi)         // ROMix - 3
+                        blockmix_salsa8(XY, Yi, r, x, _X);             // ROMix - 4
                     }
 
                     // for (var i = 0; i < N; i++)
@@ -412,17 +364,15 @@
                     // Fall through
 
                 case 2:
-        //dump(B);
 
                     // Run up to 1000 steps of the second inner smix loop
                     var steps = N - i1;
                     if (steps > limit) { steps = limit; }
                     for (var i = 0; i < steps; i++) {                // ROMix - 6
-                        var offset = (2 * r - 1) * 16;          // ROMix - 7
-                        //var j = XY.readUInt32LE(offset) & (N - 1);
+                        var offset = (2 * r - 1) * 16;               // ROMix - 7
                         var j = XY[offset] & (N - 1);
-                        blockxor(V, j * Yi, XY, 0, Yi);             // ROMix - 8 (inner)
-                        blockmix_salsa8(XY, 0, Yi, r, B32, x, _X);  // ROMix - 9 (outer)
+                        blockxor(V, j * Yi, XY, Yi);              // ROMix - 8 (inner)
+                        blockmix_salsa8(XY, Yi, r, x, _X);           // ROMix - 9 (outer)
                     }
 
                     // for (var i = 0; i < N; i++)...
@@ -440,8 +390,8 @@
                     if (i1 < N) {
                         break;
                     }
-                    arraycopy(XY, 0, B, Bi, Yi);
-                    //XY.copy(B, Bi, Xi, Xi + Yi);                   // ROMix - 10
+
+                    arraycopy(XY, 0, B, Bi, Yi);                     // ROMix - 10
 
                     // for (var i = 0; i < p; i++)...
                     i0++;
