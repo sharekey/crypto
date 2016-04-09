@@ -34,9 +34,6 @@ npm install scrypt-js
 **browser**
 
 ```html
-<!-- This dependency will be removed soon -->
-<script src="https://wzrd.in/standalone/buffer" type="text/javascript"></script>
-        
 <script src="https://raw.githubusercontent.com/ricmoo/scrypt-js/master/scrypt.js" type="text/javascript"></script>
 ```
 
