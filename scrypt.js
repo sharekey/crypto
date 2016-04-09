@@ -152,7 +152,8 @@
             dk = dk.concat(SHA256(outerKey.concat(SHA256(inner))).slice(0, dkLen));
         }
 
-        return new Buffer(dk);
+        return dk;
+        //return new Buffer(dk);
     }
 
     // The following is an adaptation of scryptsy
@@ -236,29 +237,19 @@
         }
     }
 
-    function makeBuffer(value) {
-        if (typeof(value) === 'string') {
-            return new Buffer(value);
+    function checkBufferish(o) {
+        if (!o || typeof(o.length) !== 'number') {
+            return false;
+        }
+        for (var i = 0; i < o.length; i++) {
+            if (typeof(o[i]) !== 'number') { return false; }
 
-        } else if (Buffer.isBuffer(value)) {
-            return value;
-
-        } else if (value.length) {
-            var allBytes = true;
-            for (var i = 0; i < value.length; i++) {
-                var v = parseInt(value[i]);
-                if (v != value[i] || v < 0 || v >= 256) {
-                    allBytes = false;
-                    break;
-                }
-            }
-
-            if (allBytes) {
-                return new Buffer(value);
+            var v = parseInt(o[i]);
+            if (v != o[i] || v < 0 || v >= 256) {
+                return false;
             }
         }
-
-        throw new Error('invalid value (must be a buffer, array of bytes or string)');
+        return true;
     }
 
 
@@ -268,13 +259,20 @@
 
         if (!callback) { throw new Error('missing callback'); }
 
-        if (N === 0 || (N & (N - 1)) !== 0) { throw new Error('invalid parameter N'); }
+        if (N === 0 || (N & (N - 1)) !== 0) { throw new Error('N must be power of 2'); }
 
-        if (N > MAX_VALUE / 128 / r) { throw new Error('invalid parameter N'); }
-        if (r > MAX_VALUE / 128 / p) { throw new Error('invalid parameter r'); }
+        if (N > MAX_VALUE / 128 / r) { throw new Error('N too large'); }
+        if (r > MAX_VALUE / 128 / p) { throw new Error('r too large'); }
 
-        password = makeBuffer(password);
-        salt = makeBuffer(salt);
+        if (!checkBufferish(password)) {
+            throw new Error('password must be an array or buffer');
+        }
+
+        if (!checkBufferish(salt)) {
+            throw new Error('salt must be an array or buffer');
+        }
+        password = new Buffer(password);
+        salt = new Buffer(salt);
 
         var b = PBKDF2_HMAC_SHA256_OneIter(password, salt, p * 128 * r);
         var B = new Int32Array(p * 32 * r)
@@ -371,7 +369,7 @@
                     for (var i = 0; i < steps; i++) {                // ROMix - 6
                         var offset = (2 * r - 1) * 16;               // ROMix - 7
                         var j = XY[offset] & (N - 1);
-                        blockxor(V, j * Yi, XY, Yi);              // ROMix - 8 (inner)
+                        blockxor(V, j * Yi, XY, Yi);                 // ROMix - 8 (inner)
                         blockmix_salsa8(XY, Yi, r, x, _X);           // ROMix - 9 (outer)
                     }
 
@@ -400,16 +398,21 @@
                         break;
                     }
 
-                    b = new Buffer(B.length * 4);
+                    b = [];
                     for (var i = 0; i < B.length; i++) {
-                        b[4 * i + 0] = (B[i] >> 0) & 0xff;
-                        b[4 * i + 1] = (B[i] >> 8) & 0xff;
-                        b[4 * i + 2] = (B[i] >> 16) & 0xff;
-                        b[4 * i + 3] = (B[i] >> 24) & 0xff;
+                        b.push((B[i] >>  0) & 0xff);
+                        b.push((B[i] >>  8) & 0xff);
+                        b.push((B[i] >> 16) & 0xff);
+                        b.push((B[i] >> 24) & 0xff);
                     }
 
+                    var derivedKey = PBKDF2_HMAC_SHA256_OneIter(password, b, dkLen);
+                    //if (typeof(Buffer) !== 'undefined') {
+                    //    derivedKey = new Buffer(derivedKey);
+                    //}
+
                     // Done; don't break (which would reschedule)
-                    return callback(null, 1.0, PBKDF2_HMAC_SHA256_OneIter(password, b, dkLen));
+                    return callback(null, 1.0, derivedKey);
                 }
 
                 // Schedule the next steps
