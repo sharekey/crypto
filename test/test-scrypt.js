@@ -20,6 +20,7 @@ function makeTest(options) {
                 console.log(error);
 
             } else if (key) {
+                key = new Buffer(key);
                 test.ok(derivedKeyHex === key.toString('hex'), 'failed to generate correct derived key');
                 test.done();
             } else {
