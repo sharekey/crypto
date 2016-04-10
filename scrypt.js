@@ -434,13 +434,14 @@
         define(scrypt);
 
     // Web Browsers
-    } else {
-        root.scrypt = scrypt;
+    } else if (root) {
 
         // If there was an existing library "scrypt", make sure it is still available
-        if (root && root.scrypt) {
+        if (root.scrypt) {
             root._scrypt = root.scrypt;
         }
+
+        root.scrypt = scrypt;
     }
 
 })(this);
