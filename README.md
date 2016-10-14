@@ -13,9 +13,9 @@ Tuning
 ------
 
 The scrypt algorithm is, by design, expensive to execute, which increases the amount of time an attacker requires in order to brute force guess a password, adjustable by several parameters which can be tuned:
-- **N** - The general work factor; increasing this increases the difficulty of the overall derivation
-- **p** - The memory cost; increasing this increases the memory required during derivation
-- **r** - The parallelization factor; increasing the computation required during derivation
+- **N** - The CPU/memory cost; increasing this increases the overall difficulty
+- **r** - The block size; increasing this increases the dependency on memory latency and bandwidth
+- **p** - The parallelization cost; increasing this increases the dependency on multi-processing
 
 
 
