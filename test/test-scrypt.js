@@ -1,39 +1,40 @@
-var nodeunit = require('nodeunit');
+"use strict";
 
-var scrypt = require('../scrypt.js');
+const assert = require("assert");
 
-var testVectors = require('./test-vectors.json');
+const scrypt = require('../scrypt.js');
 
-function makeTest(options) {
-    var password = new Buffer(options.password, 'hex');
-    var salt = new Buffer(options.salt, 'hex');
-    var N = options.N;
-    var p = options.p;
-    var r = options.r;
-    var dkLen = options.dkLen;
+const testVectors = require('./test-vectors.json');
 
-    var derivedKeyHex = options.derivedKey;
+for (let i = 0; i < testVectors.length; i++) {
+    const test = testVectors[i];
 
-    return function (test) {
+    const password = new Buffer(test.password, 'hex');
+    const salt = new Buffer(test.salt, 'hex');
+    const N = test.N;
+    const p = test.p;
+    const r = test.r;
+    const dkLen = test.dkLen;
+
+    const derivedKeyHex = test.derivedKey;
+
+    it("Test async " + String(i), function() {
+      this.timeout(60000);
+
+      return new Promise(function(resolve, reject) {
         scrypt(password, salt, N, r, p, dkLen, function(error, progress, key) {
             if (error) {
                 console.log(error);
+                assert.ok(false);
+                reject(error);
 
             } else if (key) {
-                key = new Buffer(key);
-                test.equal(derivedKeyHex, key.toString('hex'), 'failed to generate correct derived key');
-                test.done();
+                assert.equal(derivedKeyHex, Buffer.from(key).toString('hex'), 'failed to match derived key');
+                resolve();
             } else {
             }
         });
-    }
+      });
+    });
 }
 
-var Tests = {scrypt: {}};
-for (var i = 0; i < testVectors.length; i++) {
-    var test = testVectors[i];
-    Tests.scrypt['test-' + Object.keys(Tests.scrypt).length] = makeTest(test);
-}
-
-
-nodeunit.reporters.default.run(Tests);
