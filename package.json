@@ -1,11 +1,12 @@
 {
   "name": "scrypt-js",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "The scrypt password-based key derivation function with sync and cancellable async.",
   "main": "scrypt.js",
   "scripts": {
     "test": "mocha test/test-scrypt.js"
   },
+  "types": "scrypt.d.ts",
   "devDependencies": {
     "mocha": "6.2.2"
   },
