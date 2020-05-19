@@ -11,7 +11,6 @@ then be used as a key for symmetric block ciphers, private keys, et cetera.
 - **Cancellable** - If the key is no longer required, the computation can be cancelled
 - **Progress Callback** - Provides the current progress of key derivation as a percentage complete
 
-
 Tuning
 ------
 
@@ -27,7 +26,11 @@ Installing
 
 **node.js**
 
-You should likely not use this module for *node.js* as there are many faster [alternatives](https://www.npmjs.com/package/scrypt), but if you so wish to do so:
+If you do not require the progress callback or cancellable features, and your application
+is specific to *node.js*, you should likely use the
+[built-in crypto package](https://nodejs.org/api/crypto.html#crypto_crypto_scrypt_password_salt_keylen_options_callback).
+
+Otherwise, to install in node.js, use:
 
 ```
 npm install scrypt-js
