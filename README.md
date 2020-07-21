@@ -1,1 +1,1 @@
-# Sharekey cryptograpgy
+# Sharekey cryptography
