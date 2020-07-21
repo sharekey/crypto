@@ -1,0 +1,15 @@
+[submodule "libsodium"]
+	path = libsodium
+	url = git@github.com:jedisct1/libsodium.git
+[submodule "NAChloride"]
+	path = NAChloride
+	url = git@github.com:gabriel/NAChloride.git
+[submodule "tweetnacl-js"]
+	path = tweetnacl-js
+	url = git@github.com:dchest/tweetnacl-js.git
+[submodule "tweetnacl-swiftwrap"]
+	path = tweetnacl-swiftwrap
+	url = git@github.com:sharekey/tweetnacl-swiftwrap.git
+[submodule "libsodium-jni"]
+	path = libsodium-jni
+	url = git@github.com:joshjdevl/libsodium-jni.git
